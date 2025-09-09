@@ -22,14 +22,14 @@
 
 | 架构 | 代码 | 功能描述 |
 |------|----------|----------|
-│ **应用层** | pipeline_controller.py  | 主程序     │
-│ **模型处理层** | model_processor.py   | 模型加载与转换 │
-│ **原语层** |  manycore_primitives.py | 14种计算/通信原语 │
-│ **调度层** |  manycore_scheduler.py  | 任务分配/负载均衡 │
-│ **代生层** |  manycore_codegen.py    | 指令生成/二进制打包 │
-│ **运行层** |  manycore_runtime.py    | 核心管理/数据加载/执行 │
-│ **配置层** | manycore_config.py      | 配置解析/硬件抽象 |   
-│ **配置文件层** │ manycore_config.yaml | 硬件/角色/模型配置 │
+│**应用层**| pipeline_controller.py  | 主程序     │
+│**模型处理层**| model_processor.py   | 模型加载与转换 │
+│**原语层**|  manycore_primitives.py | 14种计算/通信原语 │
+│**调度层**|  manycore_scheduler.py  | 任务分配/负载均衡 │
+│**代生层**|  manycore_codegen.py    | 指令生成/二进制打包 │
+│**运行层**|  manycore_runtime.py    | 核心管理/数据加载/执行 │
+│**配置层**| manycore_config.py      | 配置解析/硬件抽象 |   
+│**配置文件层**│ manycore_config.yaml | 硬件/角色/模型配置 │
     
 
 ### 核心数据流
