@@ -92,8 +92,8 @@ class ModelProcessor:
            mod = relax.transform.LegalizeOps()(mod)
 
         # 如果需要转换格式
-        if convert_format:
-            mod = self.transform_nchw_to_ncwh(mod)
+        # if convert_format:
+        #     mod = self.transform_nchw_to_ncwh(mod)
 
         return mod, input_name, onnx_model
     
@@ -135,31 +135,31 @@ class ModelProcessor:
         self.logger.info("ONNX模型量化为UINT8格式完成")
         return quantized_model
     
-    def transform_nchw_to_ncwh(self, mod: tvm.IRModule) -> tvm.IRModule:
-        """将模型中的NCHW格式转换为NCWH格式
+    # def transform_nchw_to_ncwh(self, mod: tvm.IRModule) -> tvm.IRModule:
+    #     """将模型中的NCHW格式转换为NCWH格式
         
-        Args:
-            mod: TVM IRModule对象
+    #     Args:
+    #         mod: TVM IRModule对象
         
-        Returns:
-            tvm.IRModule: 转换后的IRModule对象
-        """
-        self.logger.info("开始将NCHW格式转换为NCWH格式...")
+    #     Returns:
+    #         tvm.IRModule: 转换后的IRModule对象
+    #     """
+    #     self.logger.info("开始将NCHW格式转换为NCWH格式...")
         
-        # 定义转置变换函数，将NCHW(0,1,2,3)转换为NCWH(0,1,3,2)
-        def transform_layout(func):
-            if isinstance(func, relax.Function):
-                # 处理Relax函数中的所有表达式
-                updated_body = self._recursive_transform(func.body)
-                return func.with_body(updated_body)
-            return func
+    #     # 定义转置变换函数，将NCHW(0,1,2,3)转换为NCWH(0,1,3,2)
+    #     def transform_layout(func):
+    #         if isinstance(func, relax.Function):
+    #             # 处理Relax函数中的所有表达式
+    #             updated_body = self._recursive_transform(func.body)
+    #             return func.with_body(updated_body)
+    #         return func
         
-        # 应用布局转换到模型中的所有函数
-        for gv in mod.get_global_vars():
-            mod[gv] = transform_layout(mod[gv])
+    #     # 应用布局转换到模型中的所有函数
+    #     for gv in mod.get_global_vars():
+    #         mod[gv] = transform_layout(mod[gv])
         
-        self.logger.info("NCHW格式转换为NCWH格式完成")
-        return mod
+    #     self.logger.info("NCHW格式转换为NCWH格式完成")
+    #     return mod
     
     def _recursive_transform(self, expr):
         """递归处理表达式，执行布局转换"""
