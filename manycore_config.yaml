@@ -27,8 +27,8 @@ core_roles:
 
 # 模型配置
 model:
-  onnx_path: "./onnx_model/lenet.onnx"  # ONNX模型文件路径
-  input_shape: [1, 1, 28, 28]              # 模型输入形状 (N, C, H, W)
+  onnx_path: "./onnx_model/lenet-nlg.onnx"  # ONNX模型文件路径
+  input_shape: [1, 1, 1, 100]              # 模型输入形状 (N, C, H, W)
   input_dtype: "float32"                   # 输入数据类型
 
 # 网络层到计算核心的映射

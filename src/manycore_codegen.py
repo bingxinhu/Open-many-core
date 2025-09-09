@@ -255,6 +255,8 @@ class RoleAwareCodeGenerator:
                         if isinstance(op, float):
                             binary.extend(bytearray(op.to_bytes(4, byteorder='little', signed=True)))
                         else:
-                            binary.extend(op.to_bytes(4, byteorder='little', signed=True))
-        
+                            # 将numpy.int64转换为Python内置整数类型
+                            python_int = int(op)
+                            binary.extend(python_int.to_bytes(4, byteorder='little', signed=True))
+
         return binary

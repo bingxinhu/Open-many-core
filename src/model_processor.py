@@ -6,6 +6,9 @@ import onnx  # 添加缺失的onnx导入
 import onnx.checker
 from typing import Tuple, Dict, List
 from tvm.relax.frontend.onnx import from_onnx
+import onnxruntime
+from onnxruntime.quantization import quantize_dynamic, QuantType
+import os
 
 class ModelProcessor:
     """模型处理类,负责ONNX模型的加载、转换和分析(兼容TVM Relay)"""
@@ -19,8 +22,12 @@ class ModelProcessor:
         self.config = config
         self.logger = logging.getLogger(__name__)
         
-    def load_and_convert(self) -> Tuple[tvm.IRModule, str, onnx.ModelProto]:
+    def load_and_convert(self, convert_format=True, quantize_to_uint8=False) -> Tuple[tvm.IRModule, str, onnx.ModelProto]:
         """加载ONNX模型并转换为TVM Relay IR
+        
+        Args:
+            convert_format: 是否将NCHW格式转换为NCWH格式
+            quantize_to_uint8: 是否将模型量化为UINT8格式
         
         Returns:
             tvm.IRModule: TVM Relay中间表示
@@ -33,6 +40,10 @@ class ModelProcessor:
         onnx_model = onnx.load(onnx_path)
         onnx.checker.check_model(onnx_model)
         self.logger.info("ONNX模型格式验证通过")
+        
+        # 如果需要量化为UINT8
+        if quantize_to_uint8:
+            onnx_model = self.quantize_to_uint8(onnx_model)
         
         # 获取输入名称和形状
         input_name = onnx_model.graph.input[0].name
@@ -63,6 +74,106 @@ class ModelProcessor:
            mod = relax.transform.LegalizeOps()(mod)
 
         return mod, input_name, onnx_model
+    
+    def quantize_to_uint8(self, onnx_model: onnx.ModelProto) -> onnx.ModelProto:
+        """将ONNX模型量化为UINT8格式
+        
+        Args:
+            onnx_model: 原始ONNX模型
+        
+        Returns:
+            onnx.ModelProto: 量化后的ONNX模型
+        """
+        self.logger.info("开始量化ONNX模型为UINT8格式...")
+        
+        # 保存原始模型到临时文件
+        temp_path = "temp_original.onnx"
+        quantized_path = "temp_quantized_uint8.onnx"
+        onnx.save(onnx_model, temp_path)
+        
+        # 使用onnxruntime进行动态量化
+        quantize_dynamic(
+            temp_path,
+            quantized_path,
+            weight_type=QuantType.QUInt8,
+            per_channel=False,
+            reduce_range=True
+        )
+        
+        # 加载量化后的模型
+        quantized_model = onnx.load(quantized_path)
+        onnx.checker.check_model(quantized_model)
+        
+        # 清理临时文件
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+        if os.path.exists(quantized_path):
+            os.remove(quantized_path)
+        
+        self.logger.info("ONNX模型量化为UINT8格式完成")
+        return quantized_model
+    
+    def transform_nchw_to_ncwh(self, mod: tvm.IRModule) -> tvm.IRModule:
+        """将模型中的NCHW格式转换为NCWH格式
+        
+        Args:
+            mod: TVM IRModule对象
+        
+        Returns:
+            tvm.IRModule: 转换后的IRModule对象
+        """
+        self.logger.info("开始将NCHW格式转换为NCWH格式...")
+        
+        # 定义转置变换函数，将NCHW(0,1,2,3)转换为NCWH(0,1,3,2)
+        def transform_layout(func):
+            if isinstance(func, relax.Function):
+                # 处理Relax函数中的所有表达式
+                # 这里简化处理，实际应用中可能需要更复杂的逻辑来处理各种算子
+                updated_body = self._recursive_transform(func.body)
+                return func.with_body(updated_body)
+            return func
+        
+        # 应用布局转换到模型中的所有函数
+        for gv in mod.get_global_vars():
+            mod[gv] = transform_layout(mod[gv])
+        
+        self.logger.info("NCHW格式转换为NCWH格式完成")
+        return mod
+    
+    def _recursive_transform(self, expr):
+        """递归处理表达式，执行布局转换"""
+        # 如果是数据类型节点，检查是否需要转置
+        if isinstance(expr, relax.Call) and hasattr(expr.op, "name"):
+            # 检查是否是卷积或池化等需要布局转换的操作
+            op_name = expr.op.name
+            if "conv2d" in op_name.lower() or "pool" in op_name.lower():
+                # 检查输入形状是否是4D(NCHW)
+                if len(expr.args[0].struct_info.shape) == 4:
+                    # 构建转置操作，将NCHW(0,1,2,3)转置为NCWH(0,1,3,2)
+                    transposed = relax.op.transpose(expr.args[0], axes=[0, 1, 3, 2])
+                    # 替换原始参数
+                    new_args = list(expr.args)
+                    new_args[0] = transposed
+                    # 构建新的调用
+                    new_call = relax.Call(expr.op, new_args, expr.attrs, expr.span)
+                    # 对结果进行反向转置，保持输出格式一致
+                    result_transposed = relax.op.transpose(new_call, axes=[0, 1, 3, 2])
+                    return result_transposed
+        
+        # 递归处理子表达式
+        if hasattr(expr, "body"):
+            expr = expr.with_body(self._recursive_transform(expr.body))
+        if hasattr(expr, "then_branch"):
+            expr = expr.with_then_branch(self._recursive_transform(expr.then_branch))
+        if hasattr(expr, "else_branch"):
+            expr = expr.with_else_branch(self._recursive_transform(expr.else_branch))
+        if hasattr(expr, "args") and isinstance(expr.args, list):
+            new_args = []
+            for arg in expr.args:
+                new_args.append(self._recursive_transform(arg))
+            expr = expr.replace(args=new_args)
+        
+        return expr
     
     def extract_weights(self, onnx_model: onnx.ModelProto) -> Dict[str, np.ndarray]:
         """从ONNX模型中提取权重参数"""
