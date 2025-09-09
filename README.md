@@ -70,7 +70,7 @@ YAML配置 → [manycore_config.py] → 配置对象（硬件/角色/模型参�
 ### 环境依赖
 
 - Python 3.8+
-- TVM 0.15.0+（需支持Relax IR）
+- TVM 0.20.0+（需支持Relax IR）
 - ONNX 1.13.0+
 - PyYAML 6.0+
 - NumPy 1.24.0+
