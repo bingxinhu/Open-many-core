@@ -1,0 +1,39 @@
+# 众核架构完整配置文件
+
+# 硬件配置
+hardware:
+  total_cores: 160                 # 总核心数
+  array_shape: [16, 10]            # 核心阵列形状 (行, 列)
+  core_spec:
+    sram_size: 147456              # 每个核心的SRAM总大小 (144KB)
+    sram_layout:
+      data: 98304                  # 数据区域大小 (66.7%)
+      metadata: 32768              # 元数据区域大小 (22.2%)
+      scratchpad: 16384            # 临时缓冲区大小 (11.1%)
+    compute_capability:
+      mac_units: 32                # 每个核心的MAC单元数量
+      support_fma: true            # 是否支持FMA指令
+  noc:                             # 片上网络配置
+    latency_per_hop: 3             # 每跳延迟 (ns)
+    bandwidth: 12.5                # 带宽 (GB/s)
+    max_hops: 25                   # 最大跳数
+
+# 核心角色配置
+core_roles:
+  input: 0                         # 输入核心ID (1个核心)
+  output: 7                        # 输出核心ID (1个核心)
+  compute: [1, 2, 3, 4, 5, 6]      # 计算核心ID列表 (6个核心)
+  cache: [8, 9]                    # 缓存核心ID列表 (2个核心)
+
+# 模型配置
+model:
+  onnx_path: "./onnx_model/lenet.onnx"  # ONNX模型文件路径
+  input_shape: [1, 1, 28, 28]              # 模型输入形状 (N, C, H, W)
+  input_dtype: "float32"                   # 输入数据类型
+
+# 网络层到计算核心的映射
+layer_mapping:
+  conv2d_0: [1, 2, 3]              # 第一层卷积使用核心1-3
+  conv2d_1: [4, 5, 6]              # 第二层卷积使用核心4-6
+  fc_0: [1, 2, 3, 4, 5, 6]         # 全连接层使用所有6个计算核心
+  relu_0: [1, 2, 3, 4, 5, 6]       # ReLU激活使用所有计算核心
