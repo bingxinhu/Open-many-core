@@ -1,5 +1,7 @@
 import logging
 import numpy as np
+import os  # 新增导入
+import time  # 新增导入
 
 # 导入组件
 from model_processor import ModelProcessor
@@ -29,17 +31,17 @@ class PipelineController:
         """初始化众核架构核心组件"""
         # 注册原语
         RoleBasedPrimitives.register_primitives()
-        
+        logging.info("1. 原语注册完成")
         # 创建调度器
         self.scheduler = RoleBasedScheduler(self.config)
-        
+        logging.info("2. 调度器初始化完成")
         # 创建代码生成器
         self.codegen = RoleAwareCodeGenerator(self.config, self.scheduler)
-        
+        logging.info("3. 代码生成器初始化完成")
         # 创建运行时
         self.runtime = RoleBasedRuntime(self.config)
-        
-        logging.info("众核架构核心组件初始化完成")
+    
+        logging.info("4. 众核架构核心组件初始化完成")
         logging.info(f"核心配置: 输入={self.config.get_core_ids_by_role('input')}, "
                     f"输出={self.config.get_core_ids_by_role('output')}, "
                     f"计算核心数={len(self.config.get_core_ids_by_role('compute'))}")
@@ -76,6 +78,7 @@ class PipelineController:
         input_size = np.prod(self.config.get_input_shape()) * np.dtype(self.config.get_input_dtype()).itemsize
         
         # 为每个层生成代码
+        logging.info(f"开始为 {len(self.layers)} 层生成代码...")
         for i, (layer_name, layer_type) in enumerate(self.layers):
             logging.info(f"为层 {layer_name} (类型: {layer_type}) 生成代码")
             
@@ -105,6 +108,22 @@ class PipelineController:
         # 生成最终二进制
         self.binary = self.codegen.generate_binary()
         logging.info(f"二进制代码生成完成，大小: {len(self.binary)}字节")
+        
+        # 新增：保存二进制到output目录
+        output_dir = "output"
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+            logging.info(f"创建输出目录: {output_dir}")
+            
+        # 生成带有时间戳的文件名
+        timestamp = time.strftime("%Y%m%d_%H%M%S")
+        binary_filename = f"{output_dir}/manycore_executable_{timestamp}.bin"
+        
+        # 保存二进制文件
+        with open(binary_filename, 'wb') as f:
+            f.write(self.binary)
+            
+        logging.info(f"二进制文件已保存到: {binary_filename}")
     
     def run_inference(self) -> np.ndarray:
         """执行推理并返回结果"""
@@ -126,22 +145,27 @@ class PipelineController:
         return result
 
 def main():
+    # 配置全局日志
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(module)s - %(levelname)s - %(message)s"
+    )
     # 仅需指定配置文件路径
     config_path = "manycore_config.yaml"
     
     try:
         # 创建流程控制器
         controller = PipelineController(config_path)
-        
+        logging.info("流程控制器初始化完成")
         # 准备模型
         controller.prepare_model()
-        
+        logging.info("模型准备完成")
         # 生成可执行文件
         controller.generate_executable()
-        
+        logging.info("可执行文件生成成功")
         # 执行推理
         result = controller.run_inference()
-        
+        logging.info("推理执行完成")
         # 输出结果信息
         valid_result = result[result != 0]
         logging.info(f"推理完成，有效输出大小: {valid_result.shape}")

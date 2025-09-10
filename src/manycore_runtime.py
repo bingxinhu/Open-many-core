@@ -172,7 +172,7 @@ class RoleBasedRuntime:
                 
                 while remaining_size > 0:
                     block_stored = False
-                    
+                    print(f"remaining_size: {remaining_size}")
                     # 遍历所有核心寻找空间
                     for core_id in storage_cores:
                         current_addr = core_addresses[core_id]['combined']

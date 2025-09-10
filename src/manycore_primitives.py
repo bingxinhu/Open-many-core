@@ -5,25 +5,25 @@ import numpy as np
 from typing import List, Tuple, Dict, Union
 
 class RoleBasedPrimitives:
-    """基于角色的核心通信与计算原语集合，支持14种基础操作"""
+    """基于角色的核心通信与计算原语集合,支持14种基础操作"""
     
     # 原语操作码映射
     OPCODE_MAP = {
-        "conv2d": 0x10,          # 2D卷积（CNN0）
-        "conv3d": 0x11,          # 3D卷积（CNN1）
-        "vector_accumulate": 0x12, # 向量累加
-        "vector_dot": 0x13,      # 向量点积
-        "vector_multiply": 0x14, # 向量乘法
-        "vector_scale": 0x15,    # 向量缩放/扩张
-        "fully_connected": 0x16, # 全连接计算（MLP）
-        "ann_activation": 0x17,  # ANN激活函数（ReLU）
-        "vector_merge": 0x18,    # 向量合并
-        "vector_split": 0x19,    # 向量裂解
-        "lookup_table": 0x1A,    # 除法（LUT）
-        "snn_activation": 0x1B,  # SNN激活函数（LIF）
-        "data_send": 0x20,       # 数据发送
-        "scatter": 0x30,         # 输入核心数据分散
-        "gather": 0x31,          # 输出核心数据聚合
+        "conv2d": 0x41,          # 2D卷积（CNN0）
+        "conv3d": 0x81,          # 3D卷积（CNN1）
+        "vector_accumulate": 0x02, # 向量累加
+        "vector_dot": 0x03,      # 向量点积
+        "vector_multiply": 0x43, # 向量乘法
+        "vector_scale": 0x83,    # 向量缩放/扩张
+        "fully_connected": 0x04, # 全连接计算（MLP）
+        "ann_activation": 0x05,  # ANN激活函数（ReLU）
+        "vector_merge": 0x06,    # 向量合并
+        "vector_split": 0x26,    # 向量裂解
+        "lookup_table": 0x07,    # 除法（LUT）
+        "snn_activation": 0x08,  # SNN激活函数（LIF）
+        "data_send": 0x09,       # 数据发送
+        "scatter": 0x26,         # 输入核心数据分散
+        "gather": 0x06,          # 输出核心数据聚合
         "cache_sync": 0x32,      # 缓存同步
         "barrier": 0x40          # 同步栅栏
     }
@@ -86,7 +86,10 @@ class RoleBasedPrimitives:
         core_id: int,
         sram_layout: Dict[str, int]
     ) -> tir.expr:
-        """2D卷积原语（CNN0）"""
+        """2D卷积原语(CNN0)"""
+
+        """2D卷积原语(CNN0)"""
+        print("调用2D卷积原语")
         return tir.call_intrin(
             "void", "tir.manycore.conv2d",
             input_buf.access_ptr("r"),
@@ -111,6 +114,7 @@ class RoleBasedPrimitives:
         sram_layout: Dict[str, int]
     ) -> tir.expr:
         """3D卷积原语（CNN1）"""
+        print("调用3D卷积原语")
         return tir.call_intrin(
             "void", "tir.manycore.conv3d",
             input_buf.access_ptr("r"),
@@ -132,6 +136,7 @@ class RoleBasedPrimitives:
         sram_layout: Dict[str, int]
     ) -> tir.expr:
         """向量累加原语"""
+        print("调用向量累加原语")
         return tir.call_intrin(
             "void", "tir.manycore.vector_accumulate",
             input_buf.access_ptr("r"),
@@ -151,6 +156,7 @@ class RoleBasedPrimitives:
         sram_layout: Dict[str, int]
     ) -> tir.expr:
         """向量点积原语"""
+        print("调用向量点积原语")
         return tir.call_intrin(
             "void", "tir.manycore.vector_dot",
             input1_buf.access_ptr("r"),
@@ -171,6 +177,7 @@ class RoleBasedPrimitives:
         sram_layout: Dict[str, int]
     ) -> tir.expr:
         """向量乘法原语"""
+        print("调用向量乘法原语")
         return tir.call_intrin(
             "void", "tir.manycore.vector_multiply",
             tir.const(a, "float32"),
@@ -190,6 +197,7 @@ class RoleBasedPrimitives:
         sram_layout: Dict[str, int]
     ) -> tir.expr:
         """向量缩放/扩张原语"""
+        print("调用向量缩放/扩张原语")
         return tir.call_intrin(
             "void", "tir.manycore.vector_scale",
             tir.const(scale_factor, "float32"),
@@ -208,7 +216,8 @@ class RoleBasedPrimitives:
         core_id: int,
         sram_layout: Dict[str, int]
     ) -> tir.expr:
-        """全连接计算原语（MLP）"""
+        """全连接计算原语(MLP)"""
+        print("调用全连接计算原语")
         return tir.call_intrin(
             "void", "tir.manycore.fully_connected",
             input_buf.access_ptr("r"),
@@ -227,7 +236,8 @@ class RoleBasedPrimitives:
         core_id: int,
         sram_layout: Dict[str, int]
     ) -> tir.expr:
-        """ANN激活函数原语（ReLU等）"""
+        """ANN激活函数原语(ReLU等)"""
+        print("调用ANN激活函数原语")
         act_code = 0 if activation_type.lower() == "relu" else 1
         return tir.call_intrin(
             "void", "tir.manycore.ann_activation",
@@ -246,6 +256,7 @@ class RoleBasedPrimitives:
         sram_layout: Dict[str, int]
     ) -> tir.expr:
         """向量合并原语"""
+        print("调用向量合并原语")
         return tir.call_intrin(
             "void", "tir.manycore.vector_merge",
             tir.const([buf.access_ptr("r") for buf in input_bufs], "handle"),
@@ -264,6 +275,7 @@ class RoleBasedPrimitives:
         sram_layout: Dict[str, int]
     ) -> tir.expr:
         """向量裂解原语"""
+        print("调用向量裂解原语")
         return tir.call_intrin(
             "void", "tir.manycore.vector_split",
             input_buf.access_ptr("r"),
@@ -283,6 +295,7 @@ class RoleBasedPrimitives:
         sram_layout: Dict[str, int]
     ) -> tir.expr:
         """基于LUT的除法原语"""
+        print("调用基于LUT的除法原语")
         return tir.call_intrin(
             "void", "tir.manycore.lookup_table",
             input_buf.access_ptr("r"),
@@ -301,7 +314,8 @@ class RoleBasedPrimitives:
         core_id: int,
         sram_layout: Dict[str, int]
     ) -> tir.expr:
-        """SNN激活函数原语（LIF神经元）"""
+        """SNN激活函数原语(LIF神经元)"""
+        print("调用SNN激活函数原语")
         return tir.call_intrin(
             "void", "tir.manycore.snn_activation",
             voltage_buf.access_ptr("r"),
@@ -325,6 +339,7 @@ class RoleBasedPrimitives:
         size: int
     ) -> tir.expr:
         """核心间数据发送原语"""
+        print("调用核心间数据发送原语")
         return tir.call_intrin(
             "void", "tir.manycore.data_send",
             tir.const(src_core, "int32"),
@@ -343,6 +358,7 @@ class RoleBasedPrimitives:
         sizes: List[int]
     ) -> tir.expr:
         """从输入核心将数据分散到多个计算核心"""
+        print("调用从输入核心将数据分散到多个计算核心")
         return tir.call_intrin(
             "void", "tir.manycore.scatter",
             tir.const(src_core, "int32"),
@@ -361,6 +377,7 @@ class RoleBasedPrimitives:
         sizes: List[int]
     ) -> tir.expr:
         """从多个计算核心收集数据到输出核心"""
+        print("调用从多个计算核心收集数据到输出核心")
         return tir.call_intrin(
             "void", "tir.manycore.gather",
             tir.const(dst_core, "int32"),
@@ -379,6 +396,7 @@ class RoleBasedPrimitives:
         size: int
     ) -> tir.expr:
         """缓存核心同步数据到目标核心"""
+        print("调用缓存核心同步数据到目标核心")
         return tir.call_intrin(
             "void", "tir.manycore.cache_sync",
             tir.const(cache_core, "int32"),
@@ -394,6 +412,7 @@ class RoleBasedPrimitives:
         core_ids: List[int]
     ) -> tir.expr:
         """核心组同步栅栏"""
+        print("调用核心组同步栅栏")
         return tir.call_intrin(
             "void", "tir.manycore.barrier",
             tir.const(barrier_id, "int32"),

@@ -8,6 +8,7 @@ class RoleBasedScheduler:
     """基于核心角色的任务调度器，支持所有原语的任务分配"""
     def __init__(self, config: ManyCoreYAMLConfig):
         self.config = config
+        self.logger = logging.getLogger(__name__)
         self.layer_mapping = self._init_layer_mapping()  # 网络层到计算核心的映射
         self.layer_order = []  # 层执行顺序
         self.cache_map = self.map_cache_cores()  # 计算核心到缓存核心的映射
@@ -61,7 +62,18 @@ class RoleBasedScheduler:
     def _split_uniformly(self, core_ids: List[int], data_size: int) -> Dict[int, Tuple[int, int]]:
         """均匀分配工作负载"""
         core_count = len(core_ids)
-        base_size = data_size // core_count
+    
+        if data_size <= 0:
+            # 当data_size为0或负数时，返回一个默认的工作负载分配
+            self.logger.warning(f"data_size ({data_size}) 小于等于0，使用默认分配")
+            workload = {cid: (0, 0) for cid in core_ids}
+            return workload
+        
+        if (data_size > 0):
+            print(f"data_size: {data_size}")
+            print(f"core_count: {core_count}")
+        
+        base_size = data_size // core_count 
         remainder = data_size % core_count
         
         workload = {}
