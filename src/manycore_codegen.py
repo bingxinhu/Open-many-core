@@ -8,7 +8,7 @@ from manycore_scheduler import RoleBasedScheduler
 from manycore_primitives import RoleBasedPrimitives
 
 class RoleAwareCodeGenerator:
-    """感知核心角色的代码生成器，支持所有14种原语"""
+    """感知核心角色的代码生成器,支持所有14种原语"""
     def __init__(self, config: ManyCoreYAMLConfig, scheduler: RoleBasedScheduler):
         self.config = config
         self.scheduler = scheduler
@@ -235,28 +235,47 @@ class RoleAwareCodeGenerator:
         """生成二进制镜像（简化实现）"""
         # 实际实现中应将指令转换为二进制格式
         binary = bytearray()
+        print("开始生成二进制指令...")
         
         # 为每个核心添加指令
         for core_id, program in enumerate(self.core_programs):
             if program:  # 只包含有指令的核心
+                print(f"写入核心ID: {core_id}, 指令数量: {len(program)}")
                 # 添加核心ID标记
                 binary.extend(core_id.to_bytes(2, byteorder='little'))
                 # 添加指令数量
                 binary.extend(len(program).to_bytes(2, byteorder='little'))
                 
                 # 添加每条指令
-                for instr in program:
+                for instr_idx, instr in enumerate(program):
+                    # 获取操作码对应的指令名称
+                    opcode_name = "未知指令"
+                    for name, code in self.opcode_map.items():
+                        if code == instr["opcode"]:
+                            opcode_name = name
+                            break
+                    
+                    print(f"  指令{instr_idx+1}: {opcode_name}, 操作数数量: {len(instr['operands'])}")
+                    print(f"  注释: {instr['comment']}")
+                    
                     # 操作码（1字节）
                     binary.extend(instr["opcode"].to_bytes(1, byteorder='little'))
                     # 操作数数量（1字节）
                     binary.extend(len(instr["operands"]).to_bytes(1, byteorder='little'))
                     # 操作数（每个4字节）
-                    for op in instr["operands"]:
+                    for op_idx, op in enumerate(instr["operands"]):
                         if isinstance(op, float):
                             binary.extend(bytearray(op.to_bytes(4, byteorder='little', signed=True)))
                         else:
                             # 将numpy.int64转换为Python内置整数类型
                             python_int = int(op)
                             binary.extend(python_int.to_bytes(4, byteorder='little', signed=True))
-
+                    
+                    # 打印操作数详情（如果操作数不太多）
+                    if len(instr['operands']) <= 10:
+                        print(f"  操作数: {instr['operands']}")
+                    else:
+                        print(f"  操作数: [前5个: {instr['operands'][:5]}... 后5个: {instr['operands'][-5:]}]")
+        
+        print(f"二进制生成完成，总大小: {len(binary)} 字节")
         return binary
