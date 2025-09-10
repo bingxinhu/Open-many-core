@@ -1,5 +1,7 @@
 import logging
 import numpy as np
+import os  # 新增导入
+import time  # 新增导入
 
 # 导入组件
 from model_processor import ModelProcessor
@@ -106,6 +108,22 @@ class PipelineController:
         # 生成最终二进制
         self.binary = self.codegen.generate_binary()
         logging.info(f"二进制代码生成完成，大小: {len(self.binary)}字节")
+        
+        # 新增：保存二进制到output目录
+        output_dir = "output"
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+            logging.info(f"创建输出目录: {output_dir}")
+            
+        # 生成带有时间戳的文件名
+        timestamp = time.strftime("%Y%m%d_%H%M%S")
+        binary_filename = f"{output_dir}/manycore_executable_{timestamp}.bin"
+        
+        # 保存二进制文件
+        with open(binary_filename, 'wb') as f:
+            f.write(self.binary)
+            
+        logging.info(f"二进制文件已保存到: {binary_filename}")
     
     def run_inference(self) -> np.ndarray:
         """执行推理并返回结果"""
@@ -129,7 +147,7 @@ class PipelineController:
 def main():
     # 配置全局日志
     logging.basicConfig(
-        level=logging.DEBUG,
+        level=logging.INFO,
         format="%(asctime)s - %(module)s - %(levelname)s - %(message)s"
     )
     # 仅需指定配置文件路径
